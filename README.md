@@ -1,348 +1,415 @@
-🇲🇦 Credit Risk Prediction for Micro-Loans in Morocco
+# 🇲🇦 Credit Risk Prediction for Micro-Loans in Morocco
 
-An end-to-end Machine Learning pipeline and web application designed to evaluate credit risk for micro-loan applicants in Morocco using alternative financial, socio-economic, and digital behavioral data.
+### An End-to-End Machine Learning Pipeline for Alternative Credit Risk Assessment
 
-📋 Executive Summary
+<p align="center">
+  <strong>Financial Inclusion · Machine Learning · Explainable AI · FinTech</strong>
+</p>
 
-In developing economies like Morocco, traditional credit scoring models often fail microfinance applicants due to a lack of formal credit histories ("thin-file" borrowers). This project addresses financial inclusion by predicting loan default risk based on alternative data indicators—such as digital payment usage, income stream diversity, mobile metadata proxies, and savings behavior.
+---
 
-Using the World Bank Global Financial Inclusion (Global Findex) 2021 Dataset, we formulated a supervised binary classification task to categorize applicants into Low Risk (0) or High Risk (1). The system includes an offline training pipeline, leak-free preprocessing, state-of-the-art imbalanced learning using SMOTETomek, explainable AI evaluation (XAI), and a full-stack deployment architecture via a Render API backend and a Vercel frontend interface.
+## 📌 Table of Contents
 
-🏗 System Architecture & Workflow
+1. [Project Overview](#-project-overview)
+2. [Project Objectives](#-project-objectives)
+3. [Authors & Academic Context](#-authors--academic-context)
+4. [System Architecture](#-system-architecture)
+5. [Dataset & Feature Engineering](#-dataset--feature-engineering)
+6. [Machine Learning Methodology](#-machine-learning-methodology)
+7. [Model Evaluation & Results](#-model-evaluation--results)
+8. [Explainable AI & Feature Importance](#-explainable-ai--feature-importance)
+9. [Web Application & API](#-web-application--api)
+10. [Installation & Local Setup](#-installation--local-setup)
+11. [Repository Structure](#-repository-structure)
+12. [Ethics, Transparency & Limitations](#-ethics-transparency--limitations)
+13. [Future Improvements](#-future-improvements)
+14. [Technologies Used](#-technologies-used)
+15. [License & Citation](#-license--citation)
 
-The architecture is decoupled into an Offline Training Environment and a Real-Time Online Inference System.
+---
 
-+-----------------------------------------------------------------------------------------------+
-|                                 OFFLINE TRAINING ENVIRONMENT                                  |
-|                                                                                               |
-|  [World Bank Morocco Dataset] ---> [Cleaning & Feature Eng.] ---> [Train/Test Stratified Split]|
-|                                                                               |               |
-|  [Model Export (.joblib)]    <--- [Model Evaluation & XAI]  <--- [SMOTETomek Resampling]      |
-+-----------------------------------------------|-----------------------------------------------+
-                                                |
-                                                v (Model Artifact Deployment)
-+-----------------------+     HTTPS POST /predict     +-----------------------------------------+
-|    VERCEL FRONTEND    | --------------------------> |           RENDER BACKEND API            |
-|  (Interactive UI)     |                             |          (FastAPI / Flask)              |
-|                       | <-------------------------- |  [Data Validation & Preprocessing]       |
-|  [Loan Officer Dashboard]      JSON Response        |  [Model Inference & Probability Score]  |
-+-----------------------+                             +-----------------------------------------+
+## 🌍 Project Overview
 
+Access to financial services remains a challenge for many individuals and small-scale entrepreneurs in developing economies, including Morocco.
 
-Operational Workflow:
+Traditional credit scoring systems often rely on formal credit histories, banking records, and conventional financial indicators. Consequently, individuals with limited or no formal credit history (known as **thin-file borrowers**) may face difficulties accessing microfinance services.
 
-Frontend Request: Loan officer fills out applicant details on the Vercel-hosted web interface.
+This project explores an alternative approach to credit risk assessment using machine learning and alternative financial indicators.
 
-API Payload Transfer: Form input is sanitized and sent via HTTPS POST request to the Render REST API endpoint /predict.
+Using the **World Bank Global Financial Inclusion (Global Findex) 2021 Dataset**, we developed an end-to-end machine learning pipeline to classify micro-loan applicants into two risk categories:
 
-Backend Pipeline Execution: The backend applies identical feature transformations (one-hot encoding, feature scaling, aggregate feature generation) as defined during training.
+* **Low Risk (0):** Applicants classified as having lower financial vulnerability.
+* **High Risk (1):** Applicants classified as having higher financial vulnerability.
 
-Inference & Scoring: The trained model calculates the default probability score $P(y=1\vert{}X)$ and determines the final risk decision threshold.
+The proposed system considers socio-economic characteristics, financial inclusion indicators, digital payment adoption, and income-related information.
 
-Response & Audit: The decision and risk probabilities are returned to the frontend and logged for ongoing auditing and fairness tracking.
+The project integrates:
 
-📁 Dataset & Feature Engineering Pipeline
+* Data cleaning and feature engineering.
+* Supervised machine learning.
+* Imbalanced classification using SMOTETomek.
+* Model comparison and evaluation.
+* Explainable AI (XAI).
+* A REST API for real-time predictions.
+* An interactive web application for loan risk assessment.
 
-1. Source & Scale
+> **Important:** This project is an academic proof of concept. Its predictions are experimental risk indicators, not validated estimates of actual loan default probability or recommendations for real lending decisions.
 
-Dataset: World Bank Global Financial Inclusion (Global Findex) Database 2021 — Morocco Subset
+---
 
-Sample Size: 1,000 survey respondents
+## 🎯 Project Objectives
 
-Dimensionality: 114 original survey attributes reduced to 22 modeling features.
+The main objectives are to:
 
-2. Target Variable Formulation (risk_label)
+1. Explore alternative financial indicators for assessing credit risk.
+2. Investigate machine learning techniques for micro-loan risk classification.
+3. Address class imbalance in financial datasets.
+4. Compare Logistic Regression, Random Forest, and XGBoost.
+5. Evaluate models using metrics suitable for imbalanced classification.
+6. Improve model transparency through feature importance and explainability.
+7. Develop a web-based interface connected to a deployed prediction API.
+8. Explore the potential contribution of AI to financial inclusion in Morocco.
 
-The target binary variable was engineered to capture high financial vulnerability:
+---
 
-$$\text{risk\_label} = \begin{cases} 1 (\text{High Risk}), & \text{if } \text{borrowed\_last\_year} = 1 \land \text{saved\_last\_year} = 0 \land \text{num\_income\_sources} = 0 \\ 0 (\text{Low Risk}), & \text{otherwise} \end{cases}$$
+## 👥 Authors & Academic Context
 
-# Target Engineering Python Implementation
+| Information     | Details                                            |
+| --------------- | -------------------------------------------------- |
+| Authors         | Douae Laanaya, Ghoufrane Aamoumour, Noha Lakhmarti |
+| Institution     | Al Akhawayn University in Ifrane (AUI)             |
+| School          | School of Science and Engineering (SSE)            |
+| Course          | CSC 3347 – Machine Learning and Data Mining        |
+| Academic Year   | Fall 2025                                          |
+| Submission Date | December 12, 2025                                  |
+
+---
+
+## 🏗 System Architecture
+
+The system follows a decoupled architecture consisting of two main environments:
+
+1. **Offline Training Environment:** Responsible for data preparation, feature engineering, model training, evaluation, and model export.
+2. **Online Inference Environment:** Responsible for receiving applicant information, preprocessing input data, generating predictions, and returning risk assessments.
+
+### Architecture Diagram
+
+```mermaid
+flowchart TB
+    subgraph OFFLINE["OFFLINE TRAINING ENVIRONMENT"]
+        A["World Bank Global Findex 2021"]
+        B["Data Cleaning"]
+        C["Feature Engineering"]
+        D["Stratified Train/Test Split"]
+        E["SMOTETomek"]
+        F["Model Training"]
+        G["Evaluation & Explainable AI"]
+        H["Model Export (.joblib / .pkl)"]
+
+        A --> B --> C --> D
+        D --> E --> F --> G --> H
+    end
+
+    subgraph ONLINE["ONLINE INFERENCE ENVIRONMENT"]
+        I["Vercel Frontend"]
+        J["Loan Officer Dashboard"]
+        K["HTTPS POST /predict"]
+        L["Render Backend API"]
+        M["Input Validation & Preprocessing"]
+        N["Machine Learning Model"]
+        O["Risk Prediction & Score"]
+        P["JSON Response"]
+
+        I --> J --> K --> L --> M --> N --> O --> P
+        P --> I
+    end
+
+    H -. "Model Deployment" .-> N
+```
+
+### Operational Workflow
+
+1. **Applicant Information:** A loan officer enters applicant characteristics through the web application.
+2. **API Communication:** The frontend sends the information to the backend using an HTTPS POST request.
+3. **Data Processing:** The backend validates and transforms the input using the same preprocessing logic used during model development.
+4. **Prediction:** The trained model generates a classification and associated model score.
+5. **Results:** The API returns the prediction, risk category, and score in JSON format.
+6. **Monitoring:** Prediction records can support future auditing, model monitoring, and fairness analysis if appropriate logging is implemented.
+
+---
+
+## 📊 Dataset & Feature Engineering
+
+### 1. Dataset Source
+
+The project uses the:
+
+**World Bank – Global Financial Inclusion (Global Findex) Database 2021**
+
+* Geographic scope: Morocco.
+* Initial sample size: 1,000 survey respondents.
+* Original attributes: 114.
+* Selected modeling features: 22.
+
+The dataset provides information about financial access, savings, borrowing, income, digital payments, and socio-economic characteristics.
+
+### 2. Target Variable Engineering
+
+We formulated a binary target variable named `risk_label` to identify a specific financial vulnerability profile.
+
+An applicant is classified as High Risk when all three conditions are satisfied:
+
+* Borrowed during the last year.
+* Did not save during the last year.
+* Has zero recorded income sources.
+
+**Target definition:**
+
+```python
 df_clean['risk_label'] = 0
+
 df_clean.loc[
-    (df_clean['borrowed_last_year'] == 1) & 
-    (df_clean['saved_last_year'] == 0) & 
+    (df_clean['borrowed_last_year'] == 1) &
+    (df_clean['saved_last_year'] == 0) &
     (df_clean['num_income_sources'] == 0),
     'risk_label'
 ] = 1
+```
 
+**Class Distribution**
 
-Class Distribution:
+| Risk Category | Label |   Samples | Percentage |
+| ------------- | ----: | --------: | ---------: |
+| Low Risk      |     0 |       893 |      89.3% |
+| High Risk     |     1 |       107 |      10.7% |
+| **Total**     |       | **1,000** |   **100%** |
 
-Low Risk (Class 0): 893 samples (89.3%)
+<details>
+<summary><strong>Understanding the class imbalance</strong></summary>
 
-High Risk (Class 1): 107 samples (10.7%)
+The dataset contains approximately 8.35 low-risk observations for every high-risk observation.
 
-Imbalance Ratio: $8.35 : 1$
+This imbalance can cause conventional classifiers to favor the majority class, potentially reducing their ability to detect high-risk cases.
 
-3. Feature Engineering & Selection Matrix
+To address this challenge, SMOTETomek was applied exclusively to the training dataset.
 
-Category
+</details>
 
-Feature Name
+### 3. Feature Engineering & Selection
 
-Type
+The original dataset was reduced to a set of 22 modeling features.
 
-Description
+The following table highlights the main features documented in the project:
 
-Demographics
+| Category         | Feature               | Description                        |
+| ---------------- | --------------------- | ---------------------------------- |
+| Demographics     | `age`                 | Applicant's age                    |
+| Demographics     | `gender`              | Gender indicator                   |
+| Demographics     | `education_level`     | Education level (1–5)              |
+| Demographics     | `worked_last_7_days`  | Recent employment activity         |
+| Economic         | `income_quintile`     | Income category (1–5)              |
+| Economic         | `account`             | Formal bank account ownership      |
+| Economic         | `has_receive_wages`   | Receives employment wages          |
+| Economic         | `has_remittances`     | Receives remittances               |
+| Digital Activity | `anydigpayment`       | Uses digital payments              |
+| Digital Activity | `merchantpay_dig`     | Makes digital merchant payments    |
+| Digital Activity | `internetaccess`      | Has internet access                |
+| Engineered       | `digital_activity`    | Aggregate digital payment activity |
+| Engineered       | `financial_stability` | Composite financial indicator      |
 
-age
+Additional features were used in the modeling pipeline to reach the final feature set.
 
-Continuous
+### 4. Engineered Indicators
 
-Age of applicant (Imputed with median = 38)
+Three important engineered indicators were developed:
 
+**Digital Activity**
 
+```python
+df_clean['digital_activity'] = (
+    df_clean['anydigpayment'] +
+    df_clean['merchantpay_dig']
+)
+```
 
-gender
+**Number of Income Sources**
 
-Categorical
+Represents the number of recorded income streams.
 
-Binary gender (One-hot encoded)
+**Financial Stability**
 
+```python
+df_clean['financial_stability'] = (
+    df_clean['saved_last_year'] +
+    df_clean['account'] +
+    df_clean['num_income_sources']
+)
+```
 
+### 5. Data Leakage Prevention
 
-education_level
+A critical consideration was preventing target leakage.
 
-Ordinal
+The following variables were excluded from the model's input features because they were directly involved in constructing the target:
 
-Education level (Ranked 1 to 5)
+* `borrowed_last_year`
+* `saved_last_year`
+* `num_income_sources`
 
+**Note:** The composite `financial_stability` feature includes savings and income-source information. Although the raw target variables were removed, this engineered feature can still indirectly encode target information. Its use should therefore be audited carefully, and a stricter leakage-free feature set should be evaluated separately.
 
+---
 
-worked_last_7_days
+## 🤖 Machine Learning Methodology
 
-Categorical
+Three supervised machine learning algorithms were implemented and benchmarked.
 
-Employment activity flag
+### 1. Logistic Regression
 
-Economic
+Used as the baseline classification model.
 
-income_quintile
+* L2 regularization.
+* `C = 1.0`
+* `max_iter = 1000`
 
-Ordinal
+### 2. Random Forest Classifier
 
-Socio-economic income tier (1 to 5)
+An ensemble learning method combining multiple decision trees.
 
+* `n_estimators = 100`
+* `max_depth = 10`
+* `random_state = 42`
 
+### 3. XGBoost Classifier
 
-account
+A gradient-boosting algorithm that builds decision trees sequentially to improve predictive performance.
 
-Binary
+* `n_estimators = 100`
+* `learning_rate = 0.1`
+* `max_depth = 6`
+* `eval_metric = 'logloss'`
 
-Formal financial bank account ownership
+### Handling Class Imbalance: SMOTETomek
 
+We implemented **SMOTETomek**, a hybrid resampling technique combining:
 
+* **SMOTE:** Generates synthetic minority-class observations.
+* **Tomek Links:** Removes selected borderline observations to improve class separation.
 
-has_receive_wages
+### Train/Test Split
 
-Binary
+A stratified 80/20 split was used to preserve the original class distribution.
 
-Receives regular employment wages
+| Dataset                | Low Risk | High Risk | Total |
+| ---------------------- | -------: | --------: | ----: |
+| Raw Training Set       |      714 |        86 |   800 |
+| Resampled Training Set |      714 |       714 | 1,428 |
+| Hold-Out Test Set      |      179 |        21 |   200 |
 
+**Important methodological decisions:**
 
+* The test set was separated before resampling.
+* SMOTETomek was applied only to the training data.
+* The test set retained its original class distribution.
+* Model performance was evaluated on unseen test observations.
 
-has_remittances
+---
 
-Binary
+## 📈 Model Evaluation & Results
 
-Receives international/domestic remittances
+All models were evaluated using the unseen hold-out test set containing 200 observations.
 
-Digital Activity
+We selected five metrics to provide a more complete assessment of classification performance.
 
-anydigpayment
+### Performance Comparison
 
-Binary
+| Model               |  Accuracy | Balanced Accuracy |  F1-Score |   ROC-AUC |    PR-AUC |
+| ------------------- | --------: | ----------------: | --------: | --------: | --------: |
+| Logistic Regression | **0.895** |             0.794 | **0.571** | **0.940** |     0.567 |
+| Random Forest       |     0.850 |         **0.874** |     0.559 |     0.914 |     0.467 |
+| XGBoost             |     0.880 |             0.786 |     0.538 |     0.928 | **0.575** |
 
-Has performed digital payment transactions
+### Key Findings
 
+**Logistic Regression**
 
+* Highest accuracy: 89.5%.
+* Highest ROC-AUC: 0.940.
+* Highest F1-score: 0.571.
 
-merchantpay_dig
+**Random Forest**
 
-Binary
+* Highest balanced accuracy: 87.4%.
+* Demonstrated the strongest balance between sensitivity across the two classes according to this metric.
 
-Uses digital payments at merchant stores
+**XGBoost**
 
+* Highest PR-AUC: 0.575.
+* Demonstrated the strongest precision-recall ranking performance among the tested models.
 
+### Model Selection
 
-internetaccess
+No single model achieved the best result across every evaluation metric.
 
-Categorical
+The results suggest different strengths depending on the evaluation objective:
 
-Access to personal internet connection
+* Logistic Regression: Overall ranking performance.
+* Random Forest: Balanced classification performance.
+* XGBoost: Precision-recall performance.
 
-Engineered
+For a financial risk application, model selection should prioritize the cost of false negatives and false positives rather than accuracy alone.
 
-digital_activity
+---
 
-Discrete
+## 🔍 Explainable AI & Feature Importance
 
-Sum of digital payments ($\text{anydigpayment} + \text{merchantpay\_dig}$)
+Interpretability is particularly important in financial decision-support systems.
 
+To investigate the factors influencing model predictions, we examined feature importance from the tree-based models.
 
+### Top Predictive Features
 
-num_income_sources
+| Rank | Feature               | Description                       |
+| ---- | --------------------- | --------------------------------- |
+| 1    | `financial_stability` | Composite financial indicator     |
+| 2    | `account`             | Bank account ownership            |
+| 3    | `has_remittances`     | Remittance income                 |
+| 4    | `merchantpay_dig`     | Digital merchant payment adoption |
 
-Discrete
+These indicators suggest that financial access, income diversification, and digital financial activity may contain useful information for distinguishing the target classes.
 
-Total count of income streams ($0-5$)
+**Interpretability considerations:**
 
+* Feature importance indicates predictive contribution, not causality.
+* Correlated features can distort importance rankings.
+* SHAP values can provide more detailed local and global explanations.
+* Sensitive demographic variables require additional fairness analysis.
 
+---
 
-financial_stability
+## 🌐 Web Application & API
 
-Composite
+The project includes a web interface connected to a deployed machine learning backend.
 
-Score ($\text{saved} + \text{account} + \text{num\_income\_sources}$)
+### Application Architecture
 
-⚠️ Strict Data Leakage Prevention: To ensure unbiased evaluation, raw variables directly used to formulate the target (borrowed_last_year, saved_last_year, num_income_sources) were completely removed from the training feature set $X$.
+| Component     | Technology             | Responsibility          |
+| ------------- | ---------------------- | ----------------------- |
+| Frontend      | Vercel                 | Web application hosting |
+| Backend       | Render                 | API hosting             |
+| API Framework | FastAPI / Flask        | Prediction endpoint     |
+| ML Models     | Scikit-learn / XGBoost | Risk classification     |
+| Serialization | Joblib / Pickle        | Model persistence       |
 
-🔬 Model Development & Imbalance Handling
+### Prediction Endpoint
 
-We benchmarked three machine learning algorithms representing baseline linear models, bagging ensembles, and gradient-boosted trees:
+`POST /predict`
 
-Logistic Regression (Baseline Model):
+The endpoint receives applicant information and returns a classification result.
 
-Predicts probability using the sigmoid function $\sigma(z) = \frac{1}{1 + e^{-z}}$.
+#### Example Request
 
-Configured with $L_2$ penalty to reduce variance: penalty='l2', C=1.0, max_iter=1000.
-
-Random Forest Classifier (Ensemble Comparator):
-
-Aggregates predictions across multi-depth decision trees using bootstrap aggregation (bagging).
-
-Configured with n_estimators=100, max_depth=10, random_state=42.
-
-XGBoost Classifier (Gradient Boosting):
-
-Sequential boosting minimizing loss via gradient descent optimization.
-
-Configured with n_estimators=100, learning_rate=0.1, max_depth=6, eval_metric='logloss'.
-
-Resampling with SMOTETomek
-
-To prevent the models from defaulting to predicting the majority class, we applied SMOTETomek—a hybrid technique combining Synthetic Minority Over-sampling Technique (SMOTE) with Tomek Links undersampling.
-
-Split Strategy: 80% Training / 20% Stratified Hold-Out Test Set.
-
-Leakage Avoidance: SMOTETomek was applied only to the training set after performing the split.
-
-Data Split
-
-Low Risk (Class 0)
-
-High Risk (Class 1)
-
-Total Samples
-
-Raw Training Set
-
-714
-
-86
-
-800
-
-Resampled Training Set (SMOTETomek)
-
-714
-
-714
-
-1,428
-
-Hold-Out Test Set (Unseen)
-
-179
-
-21
-
-200
-
-📈 Performance Benchmarks & Results
-
-Model performance was evaluated on the unseen hold-out test set ($N=200$) using metrics robust to class imbalance:
-
-Evaluation Metrics Matrix
-
-Model
-
-Accuracy
-
-Balanced Accuracy
-
-F1-Score
-
-ROC-AUC
-
-PR-AUC
-
-Logistic Regression
-
-0.895
-
-0.794
-
-0.571
-
-0.940
-
-0.567
-
-Random Forest
-
-0.850
-
-0.874
-
-0.559
-
-0.914
-
-0.467
-
-XGBoost
-
-0.880
-
-0.786
-
-0.538
-
-0.928
-
-0.575
-
-Key Trade-off Analysis:
-
-Logistic Regression achieved the highest overall linear separation ($\text{ROC-AUC} = 0.940$) and overall F1-score ($0.571$).
-
-XGBoost recorded the best Precision-Recall AUC ($0.575$), demonstrating stability when penalizing false positives in high-risk predictions.
-
-Random Forest achieved the highest Balanced Accuracy ($0.874$), showing optimal recall for detecting true default cases.
-
-Top Predictive Features (Feature Importance Analysis)
-
-Feature importance extracted from XGBoost and Random Forest highlighted that:
-
-financial_stability (Composite Index)
-
-account (Bank Account Ownership)
-
-has_remittances (Remittance Income Stream)
-
-merchantpay_dig (Digital Merchant Payment Adoption)
-
-⚡ Real-Time API Endpoint Documentation
-
-The Render-deployed backend exposes the following prediction endpoint:
-
-POST /predict
-
-Request Payload Example:
-
+```json
 {
   "age": 34,
   "gender": 2,
@@ -357,10 +424,11 @@ Request Payload Example:
   "has_receive_transfers": 0,
   "has_remittances": 1
 }
+```
 
+#### Example Response
 
-Successful Response Payload:
-
+```json
 {
   "status": "success",
   "prediction": 0,
@@ -369,101 +437,228 @@ Successful Response Payload:
   "decision_confidence": "87.55%",
   "timestamp": "2025-12-12T14:32:10Z"
 }
+```
 
+*The request and response above illustrate the documented API contract. Actual field names, validation rules, and response values must match the deployed implementation.*
 
-💻 Local Setup & Installation Guide
+---
 
-Prerequisites
+## ⚙️ Installation & Local Setup
 
-Python 3.9, 3.10, or 3.11
+### Prerequisites
 
-git
+* Python 3.9–3.11 (depending on dependency compatibility).
+* Git.
+* pip.
+* Virtual environment support.
 
-pip / virtual environment tool
+### 1. Clone the Repository
 
-1. Clone the Repository
-
+```bash
 git clone https://github.com/your-username/credit-risk-morocco.git
+
 cd credit-risk-morocco
+```
 
+### 2. Create a Virtual Environment
 
-2. Set Up Python Virtual Environment
+**Windows:**
 
-# On Linux/macOS
-python3 -m venv venv
-source venv/bin/activate
-
-# On Windows
+```bash
 python -m venv venv
+
 venv\Scripts\activate
+```
 
+**Linux / macOS:**
 
-3. Install Dependencies
+```bash
+python3 -m venv venv
 
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
+
+```bash
 pip install --upgrade pip
+
 pip install -r requirements.txt
+```
 
+### 4. Run the Machine Learning Notebook
 
-4. Run Experimentation Notebook
-
-To re-run data processing, training, SMOTETomek balancing, and feature importance generation:
-
+```bash
 jupyter notebook notebooks/ML_Project_Report.ipynb
+```
 
+The notebook contains the experimentation and model development workflow.
 
-5. Launch Backend API Locally
+### 5. Launch the Backend API
 
+```bash
 cd api
+
 python app.py
+```
 
+The expected local address depends on the API configuration:
 
-The API will start locally at http://127.0.0.1:5000 (or http://localhost:8000).
+* Flask default: `http://127.0.0.1:5000`
+* FastAPI/Uvicorn default: `http://127.0.0.1:8000`
 
-📁 Repository Structure
+For FastAPI, if the application exposes an `app` object:
 
+```bash
+uvicorn app:app --reload --host 127.0.0.1 --port 8000
+```
+
+---
+
+## 📂 Repository Structure
+
+```text
 credit-risk-morocco/
 │
 ├── data/
 │   ├── raw/
-│   │   └── microfinance_morocco_findex2021.csv  # Raw World Bank survey data
+│   │   └── microfinance_morocco_findex2021.csv
+│   │
 │   └── processed/
-│       └── cleaned_features.csv                 # Preprocessed dataset
+│       └── cleaned_features.csv
 │
 ├── notebooks/
-│   └── ML_Project_Report.ipynb                  # Complete training pipeline & XAI
+│   └── ML_Project_Report.ipynb
 │
 ├── models/
-│   ├── logistic_regression_model.pkl            # Production model checkpoint
-│   ├── xgboost_model.pkl                        # Champion boosting model checkpoint
-│   └── scaler.pkl                               # MinMax / Standard Feature Scaler
+│   ├── logistic_regression_model.pkl
+│   ├── xgboost_model.pkl
+│   └── scaler.pkl
 │
 ├── api/
-│   ├── app.py                                   # REST API application file (FastAPI/Flask)
-│   ├── preprocessing_utils.py                   # Data transformation helper routines
-│   └── requirements.txt                         # Production API dependencies
+│   ├── app.py
+│   ├── preprocessing_utils.py
+│   └── requirements.txt
 │
 ├── frontend/
-│   ├── index.html                               # Dashboard web page UI
-│   ├── styles.css                               # UI Layout Styling
-│   └── app.js                                   # Fetch API integration scripts
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
 │
 ├── docs/
-│   └── ML_Project_Report.pdf                    # Full research project paper
+│   └── ML_Project_Report.pdf
 │
 ├── .gitignore
 ├── LICENSE
-└── README.md                                    # Documentation file
+├── requirements.txt
+└── README.md
+```
 
+---
 
-⚖️ Ethics, Transparency & Bias Mitigation
+## ⚖️ Ethics, Transparency & Limitations
 
-Alternative credit scoring systems introduce potential ethical considerations. Our system addresses these concerns through the following safeguards:
+The development of alternative credit scoring systems raises important ethical and technical considerations.
 
-Strict Anonymization: Data features are stripped of direct demographic indicators and sensitive PII to align with global privacy standards (GDPR / CNDP Morocco).
+### Privacy & Data Protection
 
-Proxy Discrimination Monitoring: Feature importance metrics are regularly monitored to prevent variables like gender or age from acting as hidden proxies for unvetted credit rejection.
+* Avoid collecting unnecessary personal information.
+* Protect applicant data through appropriate security controls.
+* Follow applicable data protection requirements, including Morocco's Law 09-08 and relevant CNDP guidance.
 
-Explainable AI (XAI): Linear coefficients and SHAP/tree feature importances are made visible to operators, ensuring loan officers can explain credit denials to applicants transparently.
+### Bias & Fairness
 
+Demographic and socio-economic characteristics can introduce unfair discrimination.
+
+The project identifies the need to monitor:
+
+* Gender-related differences.
+* Age-related differences.
+* Income-group disparities.
+* False-positive and false-negative rates across demographic groups.
+
+### Explainability
+
+Predictions should be interpretable and understandable to the people responsible for reviewing applications.
+
+### Important Research Limitations
+
+1. **Target validity:** The engineered label represents a financial vulnerability profile, not verified historical loan default.
+2. **Dataset size:** The Morocco subset contains only 1,000 respondents.
+3. **Representativeness:** Survey respondents are not necessarily representative of actual micro-loan applicants.
+4. **Temporal limitations:** The dataset is from 2021 and may not capture current financial behavior.
+5. **Probability calibration:** Predicted scores should not be interpreted as real-world default probabilities without validation and calibration.
+6. **External validation:** Further testing on actual repayment outcomes is necessary before any operational lending use.
+
+---
+
+## 🚀 Future Improvements
+
+Potential future extensions include:
+
+* [ ] Integrate real microfinance repayment datasets.
+* [ ] Validate the target against actual loan default outcomes.
+* [ ] Perform external validation on independent Moroccan datasets.
+* [ ] Implement SHAP-based individual prediction explanations.
+* [ ] Add probability calibration and decision-threshold optimization.
+* [ ] Conduct demographic fairness and bias audits.
+* [ ] Develop model monitoring and data drift detection.
+* [ ] Improve API authentication and access control.
+* [ ] Add applicant history and prediction audit logs.
+* [ ] Explore more advanced models and ensemble approaches.
+
+---
+
+## 🛠 Technologies Used
+
+| Category             | Technologies                  |
+| -------------------- | ----------------------------- |
+| Programming Language | Python                        |
+| Data Manipulation    | Pandas, NumPy                 |
+| Data Visualization   | Matplotlib, Seaborn           |
+| Machine Learning     | Scikit-learn                  |
+| Gradient Boosting    | XGBoost                       |
+| Imbalanced Learning  | Imbalanced-learn, SMOTETomek  |
+| Explainable AI       | Feature Importance, SHAP      |
+| Model Persistence    | Joblib, Pickle                |
+| Backend              | FastAPI / Flask               |
+| Frontend             | HTML, CSS, JavaScript         |
+| Deployment           | Render, Vercel                |
+| Development          | Jupyter Notebook, Git, GitHub |
+
+---
+
+## 📜 License
+
+This project is distributed under the **MIT License**.
+
+See the [`LICENSE`](LICENSE) file for more information.
+
+---
+
+## 📚 Dataset & Academic Citation
+
+**Dataset:**
+
+World Bank. (2021). *The Global Findex Database 2021: Financial Inclusion, Digital Payments, and Resilience in the Age of COVID-19.*
+
+https://www.worldbank.org/en/publication/globalfindex
+
+**Academic Project Citation:**
+
+```bibtex
+@article{Laanaya2025CreditRisk,
+  title={Credit Risk Prediction for Micro-Loans in Morocco using Alternative Financial Data},
+  author={Laanaya, Douae and Aamoumour, Ghoufrane and Lakhmarti, Noha},
+  journal={School of Science and Engineering, Al Akhawayn University},
   year={2025}
 }
+```
+
+---
+
+<p align="center">
+  <strong>🇲🇦 Exploring the Potential of AI for Financial Inclusion in Morocco</strong>
+  <br/>
+  <sub>Academic Machine Learning Project · Al Akhawayn University · Fall 2025</sub>
+</p>
